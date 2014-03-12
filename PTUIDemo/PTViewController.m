@@ -29,15 +29,15 @@
     CGFloat _screenHeight = [UIScreen mainScreen].bounds.size.height;
     CGFloat _screenWidth = [UIScreen mainScreen].bounds.size.width;
     
-    _controlPTWave = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_controlPTWave setBackgroundColor:[UIColor colorWithString:@"#249FFF"]];
-    [_controlPTWave setFrame:CGRectMake(0, _screenHeight - 80, _screenWidth / 2, 80)];
-    [self.view addSubview:_controlPTWave];
-    [_controlPTWave setTitle:@"Display CG-Wave" forState:UIControlStateNormal];
-    [_controlPTWave setTitle:@"Hide CG-Wave" forState:UIControlStateSelected];
-    [_controlPTWave setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [_controlPTWave.titleLabel setFont:[UIFont systemFontOfSize:13.f]];
-    [_controlPTWave addTarget:self action:@selector(_controlActionForPTWave:)
+    _recoderButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [_recoderButton setBackgroundColor:[UIColor colorWithString:@"#249FFF"]];
+    [_recoderButton setFrame:CGRectMake(0, _screenHeight - 80, _screenWidth / 2, 80)];
+    [self.view addSubview:_recoderButton];
+    [_recoderButton setTitle:@"Start to record" forState:UIControlStateNormal];
+    [_recoderButton setTitle:@"Stop recording" forState:UIControlStateSelected];
+    [_recoderButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [_recoderButton.titleLabel setFont:[UIFont systemFontOfSize:13.f]];
+    [_recoderButton addTarget:self action:@selector(_controlActionForRecorder:)
              forControlEvents:UIControlEventTouchUpInside];
     
     _controlGLWave = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -53,7 +53,7 @@
     
     // Start the audio recoder
     _recoder = [PTInnerAudioRecoder object];
-    [_recoder beginToGatherEnvorinmentAudio];
+    // [_recoder beginToGatherEnvorinmentAudio];
 }
 
 - (BOOL)_inChance:(float)chance
@@ -61,18 +61,14 @@
     return ((random() % 1000) / 1000.f) < chance;
 }
 
-- (void)_controlActionForPTWave:(id)sender
+- (void)_controlActionForRecorder:(id)sender
 {
-    _controlPTWave.selected = !_controlPTWave.selected;
-    if ( _controlPTWave.selected ) {
-        // Add new ptwave
-        _wave = [PTWave object];
-        [_wave setFrame:CGRectMake(0, 0, 320.f, ([UIScreen mainScreen].bounds.size.height - 80) / 2)];
-        [_wave setCurveColor:[UIColor orangeColor]];
-        [self.view.layer addSublayer:_wave];
+    _recoderButton.selected = !_recoderButton.selected;
+    if ( _recoderButton.selected ) {
+        [_recoder beginToGatherEnvorinmentAudio];
+        PYLog(@"Last Error for AudioQueue: %@", _recoder.lastError);
     } else {
-        [_wave removeFromSuperlayer];
-        _wave = nil;
+        [_recoder stop];
     }
 }
 
@@ -95,9 +91,6 @@
 - (void)__doWave
 {
     UInt16 _value = _recoder.currentWeightOfFirstChannel;
-    if ( _wave != nil ) {
-        [_wave appendNewAudioValue:_value];
-    }
     if ( _glWave != nil ) {
         [_glWave appendNewAudioValue:_value];
     }

@@ -149,6 +149,12 @@ static OSStatus SetMagicCookieForFile (
     free(_meterTable);
 }
 
+@dynamic lastError;
+- (NSError *)lastError
+{
+    return [NSError errorWithDomain:NSOSStatusErrorDomain code:_lastError userInfo:nil];
+}
+
 @dynamic currentWeightOfFirstChannel;
 - (UInt16)currentWeightOfFirstChannel
 {
@@ -177,6 +183,7 @@ static OSStatus SetMagicCookieForFile (
 
 - (void)beginToGatherEnvorinmentAudio
 {
+    if ( _isRecording ) return;
     // Set the audio queue format.
     _aqAudioDataFormat.mFormatID            = kAudioFormatLinearPCM;
     _aqAudioDataFormat.mSampleRate          = 44100.0;
@@ -187,48 +194,72 @@ static OSStatus SetMagicCookieForFile (
     _aqAudioDataFormat.mBytesPerPacket      = _aqAudioDataFormat.mBytesPerFrame * _aqAudioDataFormat.mFramesPerPacket;
     
     // AudioFileTypeID fileType                = kAudioFileAIFFType;
-    _aqAudioDataFormat.mFormatFlags         = (
-        kLinearPCMFormatFlagIsBigEndian|kLinearPCMFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsPacked
+    _aqAudioDataFormat.mFormatFlags         = //kAudioFormatFlagsCanonical;
+    (
+        kLinearPCMFormatFlagIsBigEndian | kLinearPCMFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsPacked
     );
     
     // Create the new audio queue
-    OSStatus _status = AudioQueueNewInput(
-                                          &_aqAudioDataFormat,
-                                          __innerAudioRecoderInputHanlder,
-                                          ((__bridge void *)self),
-                                          NULL,
-                                          kCFRunLoopCommonModes,
-                                          0,
-                                          &_aqAudioQueue
+    _lastError = AudioQueueNewInput(
+                                    &_aqAudioDataFormat,
+                                    __innerAudioRecoderInputHanlder,
+                                    ((__bridge void *)self),
+                                    NULL,
+                                    kCFRunLoopCommonModes,
+                                    0,
+                                    &_aqAudioQueue
                        );
-    if ( _status != noErr ) {
-        // Error Check
-    }
+    if ( _lastError != noErr ) return;
     
     // Get Buffer Size
     __deriveBufferSize(_aqAudioQueue, &_aqAudioDataFormat, 0.5, &_aqAudioBufferByteSize);
     for ( int i = 0; i < kInnerAudioBufferNumbers; ++i ) {
-        AudioQueueAllocateBuffer(_aqAudioQueue, _aqAudioBufferByteSize, &_aqAudioBufferList[i]);
-        AudioQueueEnqueueBuffer(_aqAudioQueue, _aqAudioBufferList[i], 0, NULL);
+        // Allocate the buffer
+        _lastError = AudioQueueAllocateBuffer(_aqAudioQueue, _aqAudioBufferByteSize, &_aqAudioBufferList[i]);
+        if ( _lastError != noErr ) {
+            for ( int f = i - 1; f >= 0; --f ) {
+                AudioQueueFreeBuffer(_aqAudioQueue, _aqAudioBufferList[f]);
+            }
+            AudioQueueDispose(_aqAudioQueue, true);
+            return;
+        }
+        
+        // Enqueue the buffer
+        _lastError = AudioQueueEnqueueBuffer(_aqAudioQueue, _aqAudioBufferList[i], 0, NULL);
+        if ( _lastError != noErr ) {
+            for ( int f = i; f >= 0; --f ) {
+                AudioQueueFreeBuffer(_aqAudioQueue, _aqAudioBufferList[f]);
+            }
+            AudioQueueDispose(_aqAudioQueue, true);
+            return;
+        }
     }
     
     // Set Metering
     UInt32 _val = 1;
-    OSStatus _result = AudioQueueSetProperty(
-                                             _aqAudioQueue,
-                                             kAudioQueueProperty_EnableLevelMetering,
-                                             &_val,
-                                             sizeof(UInt32));
-    if ( _result != noErr ) {
-        PYLog(@"Failed to set live metering");
+    _lastError = AudioQueueSetProperty(
+                                       _aqAudioQueue,
+                                       kAudioQueueProperty_EnableLevelMetering,
+                                       &_val,
+                                       sizeof(UInt32));
+    if ( _lastError != noErr ) {
+        for ( int i = 0; i < kInnerAudioBufferNumbers; ++i ) {
+            AudioQueueFreeBuffer(_aqAudioQueue, _aqAudioBufferList[i]);
+        }
+        AudioQueueDispose(_aqAudioQueue, true);
+        return;
     }
     
-    _isRecording = YES;
-    _currentPacket = 0;
-    _result = AudioQueueStart(_aqAudioQueue, NULL);
-    if ( _result != noErr ) {
-        PYLog(@"Failed to start the audio queue");
+    _lastError = AudioQueueStart(_aqAudioQueue, NULL);
+    if ( _lastError != noErr ) {
+        for ( int i = 0; i < kInnerAudioBufferNumbers; ++i ) {
+            AudioQueueFreeBuffer(_aqAudioQueue, _aqAudioBufferList[i]);
+        }
+        AudioQueueDispose(_aqAudioQueue, true);
+        return;
     }
+    _currentPacket = 0;
+    _isRecording = YES;
 }
 
 - (void)recordToFile:(NSString *)filepath

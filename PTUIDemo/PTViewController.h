@@ -13,13 +13,15 @@
 
 @interface PTViewController : UIViewController
 {
-    PTWave                  *_wave;
+    // PTWave                  *_wave;
     PTGLWave                *_glWave;
     
     CADisplayLink           *_displayLink;
     
-    UIButton                *_controlPTWave;
+    // UIButton                *_controlPTWave;
     UIButton                *_controlGLWave;
+    
+    UIButton                *_recoderButton;
     
     PTInnerAudioRecoder     *_recoder;
 }

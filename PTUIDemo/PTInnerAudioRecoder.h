@@ -28,9 +28,15 @@ static const int kInnerAudioBufferNumbers           = 3;
 	float                               _meterDecibelResolution;
 	float                               _meterScaleFactor;
 	float                               *_meterTable;
+    
+    // Error
+    OSStatus                            _lastError;
 }
 
 @property (nonatomic, readonly) BOOL        isRecording;
+
+// Return the last error message
+@property (nonatomic, readonly) NSError     *lastError;
 
 // Get the first channel's audio weight.
 @property (nonatomic, readonly) UInt16      currentWeightOfFirstChannel;
