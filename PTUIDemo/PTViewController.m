@@ -106,7 +106,7 @@
 {
     UInt16 _value = _recoder.currentWeightOfFirstChannel;
     if ( _glWave != nil ) {
-        [_glWave appendNewAudioValue:_value * 0.15f];
+        [_glWave appendNewAudioValue:_value];
         //[_glWave setCurveColor:[UIColor randomColor]];
     }
 }

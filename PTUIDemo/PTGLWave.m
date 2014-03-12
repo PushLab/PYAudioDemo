@@ -365,17 +365,6 @@ static NSString *__glslFragmentShaderString =
 #pragma mark --
 #pragma mark Algorithm
 
-- (void)_shiftInNewControlPointsGroup:(const PTGLControlPointGroup *)group __deprecated
-{
-    for ( int i = 0; i < (_lingerWaveCount - 1); ++i ) {
-        memcpy(_cachedControlPoints[i],
-               _cachedControlPoints[i + 1],
-               sizeof(PTGLControlPointGroup));
-    }
-    memcpy(_cachedControlPoints[_lingerWaveCount - 1],
-           group, sizeof(PTGLControlPointGroup));
-}
-
 - (CGPoint)_genControlPointForAudioValue:(UInt16)value atUsec:(long)usec
 {
     CGFloat _viewX = ((float)usec / (float)_topWaveDisplayDuration);
@@ -384,7 +373,7 @@ static NSString *__glslFragmentShaderString =
 //    if ( _x > self.bounds.size.width * 0.8 ) _x = self.bounds.size.width * 0.8;
     CGFloat _fraction = (((float)value / (float)UINT16_MAX) *
                          sin(_viewX * M_PI * 2.f));
-    CGFloat _y = sin(_fraction * M_PI * 2.f);
+    CGFloat _y = sin(_fraction * M_PI * 1.5f);
     return (CGPoint){_x, _y};
 }
 
@@ -479,6 +468,9 @@ static NSString *__glslFragmentShaderString =
         glEnable(GL_BLEND);
         
         GLfloat _alpha = 1.f / _lingerWaveCount;
+        float _normal = 2 * self.contentsScale;
+        float _thin = .5 * self.contentsScale;
+        
         int _index = 0;
         for ( ; _index < _lingerWaveCount; ++_index ) {
             _glCurveColorInfo[3] = (_index + 1) * _alpha;   // Line alpha
@@ -491,7 +483,7 @@ static NSString *__glslFragmentShaderString =
                 glUniform3fv(_glControlPointHandler[i], 1, _cachedControlPoints[_index][i]);
             }
             
-            glLineWidth(2.5 / ( _lingerWaveCount - _index) );
+            glLineWidth( (_index == (_lingerWaveCount - 1) ? _normal : _thin) );
             
             //glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)_curveDrawCount + 1);
             glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)(_curveDrawCount + 1));
