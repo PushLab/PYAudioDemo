@@ -111,10 +111,28 @@ static OSStatus SetMagicCookieForFile (
     return result;
 }
 
+static char *FormatError(char *str, OSStatus error)
+{
+    // see if it appears to be a 4-char-code
+    *(UInt32 *)(str + 1) = CFSwapInt32HostToBig(error);
+    if (isprint(str[1]) && isprint(str[2]) && isprint(str[3]) && isprint(str[4])) {
+        str[0] = str[5] = '\'';
+        str[6] = '\0';
+    } else
+        // no, format it as an integer
+        sprintf(str, "%d", (int)error);
+    return str;
+}
+
 @implementation PTInnerAudioRecoder
 
 @synthesize isRecording = _isRecording;
 
++ (void)initialize
+{
+    // Change the audio session to record
+    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayAndRecord error:nil];
+}
 - (id)init
 {
     self = [super init];
@@ -152,7 +170,11 @@ static OSStatus SetMagicCookieForFile (
 @dynamic lastError;
 - (NSError *)lastError
 {
-    return [NSError errorWithDomain:NSOSStatusErrorDomain code:_lastError userInfo:nil];
+    char _errMsg[6];
+    FormatError(_errMsg, _lastError);
+    NSString *_errStr = [NSString stringWithUTF8String:_errMsg];
+    return [self errorWithCode:_lastError message:_errStr];
+    //return [NSError errorWithDomain:NSOSStatusErrorDomain code:_lastError userInfo:nil];
 }
 
 @dynamic currentWeightOfFirstChannel;
@@ -184,6 +206,7 @@ static OSStatus SetMagicCookieForFile (
 - (void)beginToGatherEnvorinmentAudio
 {
     if ( _isRecording ) return;
+    
     // Set the audio queue format.
     _aqAudioDataFormat.mFormatID            = kAudioFormatLinearPCM;
     _aqAudioDataFormat.mSampleRate          = 44100.0;

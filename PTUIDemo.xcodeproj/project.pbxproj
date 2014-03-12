@@ -37,6 +37,7 @@
 		E69A8A8818ACA4A600D808E9 /* PTAudioRecoder.m in Sources */ = {isa = PBXBuildFile; fileRef = E69A8A8718ACA4A600D808E9 /* PTAudioRecoder.m */; };
 		E69A8A8F18AD038800D808E9 /* PTInnerAudioRecoder.m in Sources */ = {isa = PBXBuildFile; fileRef = E69A8A8E18AD038800D808E9 /* PTInnerAudioRecoder.m */; };
 		E69FCE7318D002E300AFDE36 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E69FCE7218D002E300AFDE36 /* CoreAudio.framework */; };
+		E69FCE7518D014F700AFDE36 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E69FCE7418D014F700AFDE36 /* Security.framework */; };
 		E6A0899918A8CC2E004DDAF3 /* PTGLWave.m in Sources */ = {isa = PBXBuildFile; fileRef = E6A0899818A8CC2E004DDAF3 /* PTGLWave.m */; };
 		E6A0899B18A8CE9D004DDAF3 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6A0899A18A8CE9D004DDAF3 /* OpenGLES.framework */; };
 /* End PBXBuildFile section */
@@ -91,6 +92,7 @@
 		E69A8A8D18AD038800D808E9 /* PTInnerAudioRecoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PTInnerAudioRecoder.h; sourceTree = "<group>"; };
 		E69A8A8E18AD038800D808E9 /* PTInnerAudioRecoder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PTInnerAudioRecoder.m; sourceTree = "<group>"; };
 		E69FCE7218D002E300AFDE36 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		E69FCE7418D014F700AFDE36 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		E6A0899718A8CC2E004DDAF3 /* PTGLWave.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PTGLWave.h; sourceTree = "<group>"; };
 		E6A0899818A8CC2E004DDAF3 /* PTGLWave.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PTGLWave.m; sourceTree = "<group>"; };
 		E6A0899A18A8CE9D004DDAF3 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
@@ -101,6 +103,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E69FCE7518D014F700AFDE36 /* Security.framework in Frameworks */,
 				E69FCE7318D002E300AFDE36 /* CoreAudio.framework in Frameworks */,
 				E67B398718CF0C4E00574976 /* PYUIKit.framework in Frameworks */,
 				E67B398618CF0C4A00574976 /* PYData.framework in Frameworks */,
@@ -154,6 +157,7 @@
 		E6039E3218966700006C7B4F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				E69FCE7418D014F700AFDE36 /* Security.framework */,
 				E69FCE7218D002E300AFDE36 /* CoreAudio.framework */,
 				E69A8A8418ACA2A600D808E9 /* AVFoundation.framework */,
 				E69A8A8218ACA04700D808E9 /* AudioToolbox.framework */,
