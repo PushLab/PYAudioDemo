@@ -128,11 +128,6 @@ static char *FormatError(char *str, OSStatus error)
 
 @synthesize isRecording = _isRecording;
 
-+ (void)initialize
-{
-    // Change the audio session to record
-    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayAndRecord error:nil];
-}
 - (id)init
 {
     self = [super init];
@@ -273,12 +268,12 @@ static char *FormatError(char *str, OSStatus error)
         return;
     }
     
-    int _retryTimes = 3;
-    do {
+//    int _retryTimes = 3;
+//    do {
         _lastError = AudioQueueStart(_aqAudioQueue, NULL);
-        if ( _lastError == noErr ) break;
-        _retryTimes -= 1;
-    } while ( _retryTimes > 0 );
+//        if ( _lastError == noErr ) break;
+//        _retryTimes -= 1;
+//    } while ( _retryTimes > 0 );
     if ( _lastError != noErr ) {
         for ( int i = 0; i < kInnerAudioBufferNumbers; ++i ) {
             AudioQueueFreeBuffer(_aqAudioQueue, _aqAudioBufferList[i]);

@@ -51,12 +51,12 @@ static NSString *__glslFragmentShaderString =
 #pragma mark Configuration
 + (CGFloat)topWaveDisplayDuration
 {
-    return 1.5f;
+    return .4f;
 }
 
 + (NSUInteger)lingerWaveCount
 {
-    return 4.f;
+    return 5;
 }
 
 + (PTWaveAntiAliasingLevel)antiAliasingLevel
@@ -169,23 +169,11 @@ static NSString *__glslFragmentShaderString =
     }
     return self;
 }
+
 - (void)setupGlWaveLayer
 {
     [self setBackgroundColor:[UIColor clearColor].CGColor];
     self.opaque = NO;
-    
-    // Create the render buffer
-    glGenRenderbuffers(1, &_glColorRenderBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, _glColorRenderBuffer);
-    [_glContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:self];
-    
-    // Create the frame buffer
-    glGenFramebuffers(1, &_glFrameBuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, _glFrameBuffer);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                              GL_COLOR_ATTACHMENT0,
-                              GL_RENDERBUFFER,
-                              _glColorRenderBuffer);
     
     // Create Program
     _glProgramHandler = glCreateProgram();
@@ -288,6 +276,37 @@ static NSString *__glslFragmentShaderString =
     [super setFrame:frame];
     if ( frame.size.width == 0.f ) return;
     
+    frame.size.width *= [UIScreen mainScreen].scale;
+    frame.size.height *= [UIScreen mainScreen].scale;
+
+    // Set the contents scale
+    self.contentsScale = [UIScreen mainScreen].scale;
+    
+    if ( _glColorRenderBuffer != 0 ) {
+        glDeleteRenderbuffers(1, &_glColorRenderBuffer);
+        _glColorRenderBuffer = 0;
+    }
+    if ( _glFrameBuffer != 0 ) {
+        glDeleteFramebuffers(1, &_glFrameBuffer);
+        _glFrameBuffer = 0;
+    }
+    
+    // Create the render buffer
+    glGenRenderbuffers(1, &_glColorRenderBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, _glColorRenderBuffer);
+    //    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
+    //                          self.frame.size.width * [UIScreen mainScreen].scale,
+    //                          self.frame.size.height * [UIScreen mainScreen].scale);
+    [_glContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:self];
+    
+    // Create the frame buffer
+    glGenFramebuffers(1, &_glFrameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, _glFrameBuffer);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                              GL_COLOR_ATTACHMENT0,
+                              GL_RENDERBUFFER,
+                              _glColorRenderBuffer);
+    
     if ( _allPoints != NULL ) {
         free(_allPoints);
         _allPoints = NULL;
@@ -346,7 +365,7 @@ static NSString *__glslFragmentShaderString =
 #pragma mark --
 #pragma mark Algorithm
 
-- (void)_shiftInNewControlPointsGroup:(const PTGLControlPointGroup *)group
+- (void)_shiftInNewControlPointsGroup:(const PTGLControlPointGroup *)group __deprecated
 {
     for ( int i = 0; i < (_lingerWaveCount - 1); ++i ) {
         memcpy(_cachedControlPoints[i],
@@ -381,29 +400,31 @@ static NSString *__glslFragmentShaderString =
         _allDeltaUsec = 0;
     }
     
-    PTGLControlPointGroup _currentGroup;
-    
-    // P0
-    _currentGroup[0][0] = -1.f;
-    _currentGroup[0][1] = 0.f;
-    _currentGroup[0][2] = 0.f;
-    
-    // P1 - P4
-    for ( int i = 1; i < 5; ++i ) {
-        CGPoint _p = [self
-                      _genControlPointForAudioValue:_audioValue[4 - i]
-                      atUsec:(_allDeltaUsec + _topWaveDuration_1_4 * (i - 1))];
-        _currentGroup[i][0] = _p.x;
-        _currentGroup[i][1] = _p.y;
-        _currentGroup[i][2] = 0.f;
+    for ( int _line = 0; _line < _lingerWaveCount; ++_line ) {
+        PTGLControlPointGroup _currentGroup;
+        
+        // P0
+        _currentGroup[0][0] = -1.f;
+        _currentGroup[0][1] = 0.f;
+        _currentGroup[0][2] = 0.f;
+        
+        // P1 - P4
+        for ( int i = 1; i < 5; ++i ) {
+            CGPoint _p = [self
+                          _genControlPointForAudioValue:(_audioValue[4 - i] / (_lingerWaveCount - _line))
+                          atUsec:(_allDeltaUsec + _topWaveDuration_1_4 * (i - 1))];
+            _currentGroup[i][0] = _p.x;
+            _currentGroup[i][1] = _p.y;
+            _currentGroup[i][2] = 0.f;
+        }
+        
+        // P5
+        _currentGroup[5][0] = 1.f;
+        _currentGroup[5][1] = 0.f;
+        _currentGroup[5][2] = 0.f;
+        
+        memcpy(_cachedControlPoints[_line], _currentGroup, sizeof(PTGLControlPointGroup));
     }
-    
-    // P5
-    _currentGroup[5][0] = 1.f;
-    _currentGroup[5][1] = 0.f;
-    _currentGroup[5][2] = 0.f;
-    
-    [self _shiftInNewControlPointsGroup:&_currentGroup];
 }
 
 #pragma mark --
@@ -429,7 +450,11 @@ static NSString *__glslFragmentShaderString =
     
     glBindFramebuffer(GL_FRAMEBUFFER, _glMSAAFrameBuffer);
     // Set up view port
-    glViewport(0, 0, self.bounds.size.width, self.bounds.size.height);
+    self.contentsScale = [UIScreen mainScreen].scale;
+    
+    glViewport(0, 0,
+               self.bounds.size.width * self.contentsScale,
+               self.bounds.size.height * self.contentsScale);
     glClearColor(0.f, 0.f, 0.f, 0.f);   // Clear Color
     glClear(GL_COLOR_BUFFER_BIT );
     glEnable(GL_ALPHA);
@@ -442,7 +467,9 @@ static NSString *__glslFragmentShaderString =
         
         glBindFramebuffer(GL_FRAMEBUFFER, _glMSAAFrameBuffer);
         // Set up view port
-        glViewport(0, 0, self.bounds.size.width, self.bounds.size.height);
+        glViewport(0, 0,
+                   self.bounds.size.width * self.contentsScale,
+                   self.bounds.size.height * self.contentsScale);
         // Clear
         glClearColor(0.f, 0.f, 0.f, 0.f);   // Clear Color
         glClear(GL_COLOR_BUFFER_BIT );
@@ -464,7 +491,7 @@ static NSString *__glslFragmentShaderString =
                 glUniform3fv(_glControlPointHandler[i], 1, _cachedControlPoints[_index][i]);
             }
             
-            glLineWidth(2.f / ( _lingerWaveCount - _index) );
+            glLineWidth(2.5 / ( _lingerWaveCount - _index) );
             
             //glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)_curveDrawCount + 1);
             glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)(_curveDrawCount + 1));

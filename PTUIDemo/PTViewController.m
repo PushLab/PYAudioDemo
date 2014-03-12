@@ -54,6 +54,14 @@
     // Start the audio recoder
     _recoder = [PTInnerAudioRecoder object];
     // [_recoder beginToGatherEnvorinmentAudio];
+    
+    // Change the audio session to record
+    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayAndRecord error:nil];
+    // Active the audio session
+    NSError *_audioError = nil;
+    if ( ![[AVAudioSession sharedInstance] setActive:YES error:&_audioError] ) {
+        PYLog(@"%@", _audioError);
+    }
 }
 
 - (BOOL)_inChance:(float)chance
@@ -65,8 +73,14 @@
 {
     _recoderButton.selected = !_recoderButton.selected;
     if ( _recoderButton.selected ) {
-        [_recoder beginToGatherEnvorinmentAudio];
-        PYLog(@"Last Error for AudioQueue: %@", _recoder.lastError);
+        [[AVAudioSession sharedInstance] requestRecordPermission:^(BOOL granted) {
+            if ( granted ) {
+                [_recoder beginToGatherEnvorinmentAudio];
+                if ( _recoder.lastError.code == 0 ) return;
+            }
+            _recoderButton.selected = NO;
+            PYLog(@"Last Error for AudioQueue: %@", _recoder.lastError);
+        }];
     } else {
         [_recoder stop];
     }
@@ -80,7 +94,7 @@
         _glWave = [PTGLWave object];
         [_glWave setFrame:CGRectMake(0, ([UIScreen mainScreen].bounds.size.height - 80) / 2,
                                      320, ([UIScreen mainScreen].bounds.size.height - 80) / 2)];
-        [_glWave setCurveColor:[UIColor orangeColor]];
+        [_glWave setCurveColor:[UIColor redColor]];
         [self.view.layer addSublayer:_glWave];
     } else {
         [_glWave removeFromSuperlayer];
@@ -92,7 +106,8 @@
 {
     UInt16 _value = _recoder.currentWeightOfFirstChannel;
     if ( _glWave != nil ) {
-        [_glWave appendNewAudioValue:_value];
+        [_glWave appendNewAudioValue:_value * 0.15f];
+        //[_glWave setCurveColor:[UIColor randomColor]];
     }
 }
 - (void)didReceiveMemoryWarning
